@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Enum\Roles;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -25,6 +27,11 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        
+        // Customer role will be added by default.
+        $user->roles()->create([ 
+            'role_name' => Roles::Customer,
+        ]);
 
         return response()->json([
             'access_token' => $token,

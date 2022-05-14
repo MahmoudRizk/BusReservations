@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+
 use App\Models\City;
 use App\Models\Trip;
 use App\Models\Reservation;
@@ -41,7 +43,11 @@ class OperationsController extends Controller
 {
     public function create_city(Request $request)
     {
-        // TODO: Add admin authorization.
+
+        if (!Gate::allows('is-admin', $request->user()->id)) {
+            return response("not admin", 403);
+        }
+
 
         $validatedData = $request->validate([
             'city_name' => 'required|string|max:255',
@@ -76,6 +82,10 @@ class OperationsController extends Controller
 
     public function update_city(Request $request)
     {
+        if (!Gate::allows('is-admin', $request->user()->id)) {
+            return response("not admin", 403);
+        }
+
         $id = $request->id;
         if (!$id) {
             return response()->json([
@@ -113,6 +123,10 @@ class OperationsController extends Controller
 
     public function swap_cities_orders(Request $request, $id1, $id2)
     {
+        if (!Gate::allows('is-admin', $request->user()->id)) {
+            return response("not admin", 403);
+        }
+        
         $city_1 = City::find($id1);
         if (!$city_1) {
             return response()->join([
@@ -149,7 +163,9 @@ class OperationsController extends Controller
 
     public function create_trip(Request $request)
     {
-        // TODO: Add admin authorization
+        if (!Gate::allows('is-admin', $request->user()->id)) {
+            return response("not admin", 403);
+        }
 
 
         $validatedData = $request->validate([
@@ -207,25 +223,17 @@ class OperationsController extends Controller
     }
 
     public function get_trips(Request $request)
-    {   
+    {
         $trips = Trip::get();
 
-        return response()->json([   
+        return response()->json([
             'trips' => $trips
         ]);
     }
 
     public function create_reservation(Request $request)
     {
-        // error_log(Auth::id());
-        // if(!Auth::id()){   
-        //     return response()->json([   
-        //         'message' => 'Missing user in the request.'
-        //     ], 403);
-        // }
-
-        // $user_id = Auth::id();
-        $user_id = 1; // TODO: fix hardcoded user id.
+        $user_id = $request->user()->id;
 
         $validatedData = $request->validate([
             'trip_id' => 'required|integer',

@@ -34,6 +34,7 @@ php artisan serve
 
 # APIs
 * Implemented using rest APIs.
+* Check postman collection: https://documenter.getpostman.com/view/12423053/UyxjF5qL
 
 # Database tables
 * Cities

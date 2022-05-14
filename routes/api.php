@@ -32,3 +32,5 @@ Route::put('/cities/{id}', [OperationsController::class, 'update_city']);
 Route::post('cities/swap-orders/{id1}/{id2}', [OperationsController::class, 'swap_cities_orders']);
 
 Route::post('/trips', [OperationsController::class, 'create_trip']);
+
+Route::post('/reservations', [OperationsController::class, 'create_reservation']);

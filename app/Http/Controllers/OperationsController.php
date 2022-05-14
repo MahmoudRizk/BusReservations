@@ -3,8 +3,39 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\City;
 use App\Models\Trip;
+use App\Models\Reservation;
+use App\Domain\TripSet;
+use App\Domain\TripValidation;
+
+function convert_reservation_to_trip_set(Reservation $reservation)
+{
+    $from_city = City::find($reservation->from_city_id);
+    $to_city = City::find($reservation->to_city_id);
+
+    return new TripSet($from_city->city_order, $to_city->city_order);
+}
+
+function check_available_seats(Trip $trip, Reservation $reservation)
+{
+    $trip_reservations = Reservation::where('trip_id', $trip->id)->get();
+    error_log($trip_reservations);
+    $max_seats_number = $trip->max_seats_number;
+
+    $mapped_trip_reservations = array();
+    foreach ($trip_reservations as $it) {
+        $res = convert_reservation_to_trip_set($it);
+        array_push($mapped_trip_reservations, $res);
+    }
+
+    $mapped_reservation_request = convert_reservation_to_trip_set($reservation);
+
+    $available_number_of_seats = TripValidation::available_seats_number($mapped_reservation_request, $mapped_trip_reservations, $max_seats_number);
+
+    return $available_number_of_seats;
+}
 
 class OperationsController extends Controller
 {
@@ -172,6 +203,55 @@ class OperationsController extends Controller
                 'to_city_name' => $trip->to_city->city_name,
                 'max_seats_number' => $trip->max_seats_number
             ]
+        ], 200);
+    }
+
+    public function create_reservation(Request $request)
+    {
+        // error_log(Auth::id());
+        // if(!Auth::id()){   
+        //     return response()->json([   
+        //         'message' => 'Missing user in the request.'
+        //     ], 403);
+        // }
+
+        // $user_id = Auth::id();
+        $user_id = 1; // TODO: fix hardcoded user id.
+
+        $validatedData = $request->validate([
+            'trip_id' => 'required|integer',
+            'from_city_id' => 'required|integer',
+            'to_city_id' => 'required|integer'
+        ]);
+
+        $trip = Trip::find($validatedData['trip_id']);
+        if (!$trip) {
+            return response()->json([
+                'message' => 'Missing trip_id'
+            ], 404);
+        }
+
+        $reservation = new Reservation();
+        $reservation->user_id = $user_id;
+        $reservation->trip_id = $validatedData['trip_id'];
+        $reservation->from_city_id = $validatedData['from_city_id'];
+        $reservation->to_city_id = $validatedData['to_city_id'];
+
+        $available_seats = check_available_seats($trip, $reservation);
+
+        if ($available_seats <= 0) {
+            return response()->json([
+                'message' => 'No Available Seats',
+                'available_seats' => $available_seats
+            ], 417);
+        }
+
+        $reservation->save();
+
+        return response()->json([
+            'message' => 'Reservation created successfully',
+            'reservation' => $reservation,
+            'available_seats' => $available_seats
         ], 200);
     }
 }

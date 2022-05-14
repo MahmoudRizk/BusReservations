@@ -206,6 +206,15 @@ class OperationsController extends Controller
         ], 200);
     }
 
+    public function get_trips(Request $request)
+    {   
+        $trips = Trip::get();
+
+        return response()->json([   
+            'trips' => $trips
+        ]);
+    }
+
     public function create_reservation(Request $request)
     {
         // error_log(Auth::id());
@@ -227,7 +236,7 @@ class OperationsController extends Controller
         $trip = Trip::find($validatedData['trip_id']);
         if (!$trip) {
             return response()->json([
-                'message' => 'Missing trip_id'
+                'message' => 'trip_id not found'
             ], 404);
         }
 
@@ -251,6 +260,33 @@ class OperationsController extends Controller
         return response()->json([
             'message' => 'Reservation created successfully',
             'reservation' => $reservation,
+            'available_seats' => $available_seats - 1
+        ], 200);
+    }
+
+    public function check_reservation_availability(Request $request)
+    {
+        $validatedData = $request->validate([
+            'trip_id' => 'required|integer',
+            'from_city_id' => 'required|integer',
+            'to_city_id' => 'required|integer'
+        ]);
+
+        $trip = Trip::find($validatedData['trip_id']);
+        if (!$trip) {
+            return response()->json([
+                'message' => 'trip_id not found'
+            ], 404);
+        }
+
+        $reservation = new Reservation();
+        $reservation->trip_id = $validatedData['trip_id'];
+        $reservation->from_city_id = $validatedData['from_city_id'];
+        $reservation->to_city_id = $validatedData['to_city_id'];
+
+        $available_seats = check_available_seats($trip, $reservation);
+
+        return response()->json([
             'available_seats' => $available_seats
         ], 200);
     }

@@ -124,7 +124,8 @@ class OperationsController extends Controller
         $validatedData = $request->validate([
             'trip_name' => 'required|string|unique:trips',
             'from_city' => 'required|string',
-            'to_city' => 'required|string'
+            'to_city' => 'required|string',
+            'max_seats_number' => 'required|integer'
         ]);
 
         $from_city = City::where('city_name', $validatedData['from_city'])->first();
@@ -157,17 +158,19 @@ class OperationsController extends Controller
         $trip = Trip::create([
             'trip_name' => $validatedData['trip_name'],
             'from_city_id' => $from_city->id,
-            'to_city_id' => $to_city->id  
+            'to_city_id' => $to_city->id,
+            'max_seats_number' => $validatedData['max_seats_number']
         ]);
 
         return response()->json([
             'message' => "Created trip successfully.",
-            'trip' => [ 
+            'trip' => [
                 'trip_name' => $trip->trip_name,
                 'from_city_id' => $trip->from_city->id,
                 'from_city_name' => $trip->from_city->city_name,
                 'to_city_id' => $trip->to_city->id,
-                'to_city_name' => $trip->to_city->city_name
+                'to_city_name' => $trip->to_city->city_name,
+                'max_seats_number' => $trip->max_seats_number
             ]
         ], 200);
     }

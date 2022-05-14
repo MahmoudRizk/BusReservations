@@ -10,7 +10,8 @@ class Trip extends Model
     protected $fillable = [
         'trip_name',
         'from_city_id',
-        'to_city_id'
+        'to_city_id',
+        'max_seats_number'
     ];
 
     public function from_city()

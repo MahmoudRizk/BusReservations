@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('trip_name');
             $table->integer('from_city_id');
             $table->integer('to_city_id');
+            $table->integer('max_seats_number');
         });
     }
 

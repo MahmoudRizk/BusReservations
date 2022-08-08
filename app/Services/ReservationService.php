@@ -44,11 +44,6 @@ class ReservationService
 
         if ($available_seats <= 0) {
             return new ServiceResponse(false, "NoAvailableSeats", "No Avaialble Seats");
-
-            // return response()->json([
-            //     'message' => 'No Available Seats',
-            //     'available_seats' => $available_seats
-            // ], 417);
         }
 
         $reservation->save();
@@ -58,12 +53,6 @@ class ReservationService
             "avaialble_seats" => $available_seats - 1
         ];
         return new ServiceResponse(true, "",  "Reservation created successfully", $data);
-
-        // return response()->json([
-        //     'message' => 'Reservation created successfully',
-        //     'reservation' => $reservation,
-        //     'available_seats' => $available_seats - 1
-        // ], 200);
     }
 }
 

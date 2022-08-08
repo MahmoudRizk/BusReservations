@@ -12,6 +12,8 @@ use App\Models\Reservation;
 use App\Domain\TripSet;
 use App\Domain\TripValidation;
 
+use App\Services\ReservationService;
+
 function convert_reservation_to_trip_set(Reservation $reservation)
 {
     $from_city = City::find($reservation->from_city_id);
@@ -41,6 +43,13 @@ function check_available_seats(Trip $trip, Reservation $reservation)
 
 class OperationsController extends Controller
 {
+    protected $reservationService;
+
+    public function __construct(ReservationService $reservationService)
+    {
+        $this->reservationService = $reservationService;
+    }
+
     public function create_city(Request $request)
     {
 
@@ -126,7 +135,7 @@ class OperationsController extends Controller
         if (!Gate::allows('is-admin', $request->user()->id)) {
             return response("not admin", 403);
         }
-        
+
         $city_1 = City::find($id1);
         if (!$city_1) {
             return response()->join([
@@ -241,35 +250,26 @@ class OperationsController extends Controller
             'to_city_id' => 'required|integer'
         ]);
 
-        $trip = Trip::find($validatedData['trip_id']);
-        if (!$trip) {
-            return response()->json([
-                'message' => 'trip_id not found'
-            ], 404);
+        $res =  $this->reservationService->createReservation(
+            $user_id,
+            $validatedData['trip_id'],
+            $validatedData['from_city_id'],
+            $validatedData['to_city_id']
+        );
+
+        $responseCode = 200;
+        if ($res->success == false) {
+            if ($res->errorCode == "TripNotFound") {
+                $responseCode = 404;
+            } else {
+                $responseCode = 417;
+            }
         }
-
-        $reservation = new Reservation();
-        $reservation->user_id = $user_id;
-        $reservation->trip_id = $validatedData['trip_id'];
-        $reservation->from_city_id = $validatedData['from_city_id'];
-        $reservation->to_city_id = $validatedData['to_city_id'];
-
-        $available_seats = check_available_seats($trip, $reservation);
-
-        if ($available_seats <= 0) {
-            return response()->json([
-                'message' => 'No Available Seats',
-                'available_seats' => $available_seats
-            ], 417);
-        }
-
-        $reservation->save();
-
         return response()->json([
-            'message' => 'Reservation created successfully',
-            'reservation' => $reservation,
-            'available_seats' => $available_seats - 1
-        ], 200);
+            'errorCode' => $res->errorCode,
+            'message' => $res->message,
+            'data' => $res->data
+        ], $responseCode);
     }
 
     public function check_reservation_availability(Request $request)
